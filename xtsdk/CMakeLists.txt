@@ -76,7 +76,7 @@ if(WIN32)
     target_link_libraries(xtsdk PRIVATE ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
 else()
-	target_include_directories(xtsdk PUBLIC ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
+        target_include_directories(xtsdk PUBLIC ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
     # Detect architecture
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
         set(ARCH "x86_64")
