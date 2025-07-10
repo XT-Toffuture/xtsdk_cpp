@@ -88,6 +88,7 @@ namespace XinTan
             GRAYSCALE
         };
         // 获取数据
+        virtual const uint8_t getImageFlags() = 0;
         virtual const int getDistDataSize() = 0;
         virtual const uint32_t getDistData(const size_t &index) = 0;
         virtual const uint16_t getAmplData(const size_t &index) = 0;

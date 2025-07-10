@@ -127,6 +127,11 @@ namespace XinTan
     }
 
     // const std::vector<uint8_t>& Frame::getFrameData()   { return frameData; }
+
+    const uint8_t Frame::getImageFlags()
+    {
+        return info.imageflags;
+    }
     const uint32_t Frame::getDistData(const size_t &index)
     {
         // XTLOGINFO("size inside: " + std::to_string(distData.size()));

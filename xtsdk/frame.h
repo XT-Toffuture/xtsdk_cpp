@@ -91,6 +91,7 @@ namespace XinTan
         void resetData();
         void setCofArray();
 
+        const uint8_t getImageFlags();
         const int getDistDataSize();
         const uint32_t getDistData(const size_t &index);
         const uint16_t getAmplData(const size_t &index);
