@@ -1,12 +1,9 @@
 ﻿cmake_minimum_required(VERSION 3.5)
 
-project(xtsdk VERSION 2.1.7 LANGUAGES CXX)
+project(xtsdk VERSION 2.1.8 LANGUAGES CXX)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
-
-
 # 配置版本头文件
-
 set(CMAKE_BUILD_TYPE Release)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -20,10 +17,10 @@ if(WIN32)
     # set boost path
     set(BOOST_ROOT "D:/ws/xtsdk_cpp/libs/pcl_msvc/PCL 1.14.1/3rdParty/Boost/lib/cmake")
 
-    #set OpenCV path
+    # set OpenCV path
     set(OpenCV_DIR D:/ws/xtsdk_cpp/libs/opencv/build/x64/vc15/lib/)
 
-    #set PCL path
+    # set PCL path
     set(PCL_DIR "D:/ws/xtsdk_cpp/libs/pcl_msvc/PCL 1.14.1/cmake")
     find_package(PCL REQUIRED COMPONENTS common visualization)
     add_definitions(${PCL_DEFINITIONS})
@@ -45,6 +42,7 @@ if(OpenMP_FOUND)
 else(OpenMP_FOUND)
     message(FATAL_ERROR "openmp not found!")
 endif(OpenMP_FOUND)
+
 configure_file(
     version.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/version.h
@@ -83,16 +81,13 @@ endif()
 
 add_definitions(-DPROJECT_DIR="${PROJECT_DIR}")
 
-
-
 if(WIN32)
     target_include_directories(xtsdk PUBLIC ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
     target_link_libraries(xtsdk PRIVATE ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
 else()
+    target_include_directories(xtsdk PUBLIC ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-
-        target_include_directories(xtsdk PUBLIC ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
     # Detect architecture
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
         set(ARCH "x86_64")
@@ -103,18 +98,18 @@ else()
     endif()
 
     set(LIB_DIR ${PROJECT_DIR}/xtsdk/lib/linux/${ARCH})
+
     # link_directories(LIB_DIR)
     # find_library(XTSDK_LIB NAMES xtsdk_shared
-    #     PATHS "${LIB_DIR}"
+    # PATHS "${LIB_DIR}"
     # )
 
     # if(XTSDK_LIB)
-    #     message("*************XTSDK_LIB found  ${LIB_DIR}*************")
-    #     target_link_libraries(xtsdk ${XTSDK_LIB})
+    # message("*************XTSDK_LIB found  ${LIB_DIR}*************")
+    # target_link_libraries(xtsdk ${XTSDK_LIB})
     # else()
-    #     message( "*************XTSDK_LIB not found: ${LIB_DIR}*************")
+    # message( "*************XTSDK_LIB not found: ${LIB_DIR}*************")
     # endif()
-
     add_definitions(-DLIB_DIR="${LIB_DIR}")
     target_link_libraries(xtsdk pthread boost_system boost_filesystem ${OpenCV_LIBS} dl)
 

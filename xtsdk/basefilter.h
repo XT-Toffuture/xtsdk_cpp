@@ -33,7 +33,7 @@ public:
     uint16_t filter_flag;
     void doBaseFilter(const std::shared_ptr<Frame> &frame);
 
-    bool setAvgFilter(uint16_t size);
+    bool setAvgFilter(uint16_t size, uint16_t timedf = 300);
     bool setKalmanFilter(uint16_t factor, uint16_t threshold, uint16_t timedf = 300);
     bool setEdgeFilter(uint16_t threshold);
     bool setMedianFilter(uint16_t size);
@@ -42,7 +42,8 @@ public:
 
     bool setDustFilter(uint16_t threshold, uint16_t framecount, uint16_t validpercent, uint16_t timedf = 300);
     bool setSdkReflectiveFilter(const float &threshold_min, const float &threshold_max);
-    void doDustFilter(const std::shared_ptr<Frame> &frame);
+    bool setSpatialFilter(const float &alpha, const uint32_t &delta, const uint8_t &iterations);
+    void resetFilters();
 
 private:
     void doMedianFilter(const std::shared_ptr<Frame> &frame);
@@ -50,13 +51,14 @@ private:
     void doKalmanFilter_dist(const std::shared_ptr<Frame> &frame);
     void doAverageFilter(const std::shared_ptr<Frame> &frame);
     void doEdgeFilter(const std::shared_ptr<Frame> &frame);
-
+    void doSpatialFilter(const std::shared_ptr<Frame> &frame);
     void doPostProcess(const std::shared_ptr<Frame> &frame);
     void doCloseProcess(const std::shared_ptr<Frame> &frame);
     void doMotionTrack(const std::shared_ptr<Frame> &frame);
 
     void doCloudFilter(const std::shared_ptr<Frame> &frame);
     void doReflectiveFilter(const std::shared_ptr<Frame> &frame);
+    void doDustFilter(const std::shared_ptr<Frame> &frame);
     void setSpecPara(uint8_t sn[29]);
 
     LibHandler::Ptr filter_lib;

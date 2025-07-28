@@ -1,36 +1,45 @@
-﻿cmake_minimum_required(VERSION 3.15)
-project(xtsdk VERSION 0.1 LANGUAGES CXX)
-# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-#=========================== 全局配置 ===========================
+﻿cmake_minimum_required(VERSION 3.5)
+project(xtsdk VERSION 2.1.9 LANGUAGES CXX)
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
+
+# 配置版本头文件
+set(CMAKE_BUILD_TYPE Release)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_BUILD_TYPE Release)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../lib)
 
-# 强制使用静态链接
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+# 强制使用静态链接
+message(STATUS "__________CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}_________")
+
+message(STATUS "__________SDK Version: ${PROJECT_VERSION}_________")
 
 if(WIN32)
     # set boost path
     set(BOOST_ROOT "D:/ws/xtsdk_cpp/libs/pcl_msvc/PCL 1.14.1/3rdParty/Boost/lib/cmake")
 
-    #set OpenCV path
+    # set OpenCV path
     set(OpenCV_DIR D:/ws/xtsdk_cpp/libs/opencv/build/x64/vc15/lib/)
 
-    #set PCL path
+    # set PCL path
     set(PCL_DIR "D:/ws/xtsdk_cpp/libs/pcl_msvc/PCL 1.14.1/cmake")
+    find_package(PCL REQUIRED COMPONENTS common visualization)
+    add_definitions(${PCL_DEFINITIONS})
+
 else()
     set(BUILD_SHARED_LIBS OFF)
     set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++ -static-libgcc") # 完全静态化GCC运行时
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)   # 开启PIC（Linux必需）
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON) # 开启PIC（Linux必需）
     set(BOOST_ROOT "/opt/boost_1_71_pic")
     set(OpenCV_DIR "/opt/opencv-4.2-static/lib/cmake/opencv4")
 endif()
 
-#=========================== Boost静态库配置 ===========================
+# =========================== Boost静态库配置 ===========================
 if(UNIX)
-    set(Boost_NO_SYSTEM_PATHS TRUE)  # 必须大写 TRUE
-    set(Boost_NO_BOOST_CMAKE TRUE)   # 禁用 CMake 配置文件查找
+    set(Boost_NO_SYSTEM_PATHS TRUE) # 必须大写 TRUE
+    set(Boost_NO_BOOST_CMAKE TRUE) # 禁用 CMake 配置文件查找
     set(Boost_USE_STATIC_LIBS ON)
     set(OpenCV_STATIC ON)
     find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -43,63 +52,67 @@ find_package(Boost EXACT REQUIRED COMPONENTS system filesystem regex)
 message(STATUS "Boost Library Dir: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost Libraries: ${Boost_LIBRARIES}")
 
-
-
-#=========================== OpenCV静态库配置 ===========================
+# =========================== OpenCV静态库配置 ===========================
 # set(BUILD_SHARED_LIBS OFF)
 
 # set(OpenCV_DIR "/opt/opencv-4.2-static/lib/cmake/opencv4")
 if(UNIX)
     # 使用world模块替换原有列表
     set(OPENCV_STATIC_LIBS
-    libopencv_core.a
-    libopencv_highgui.a
-    libopencv_imgproc.a
-    libopencv_video.a
-    libopencv_photo.a
-    libopencv_calib3d.a
+        libopencv_core.a
+        libopencv_highgui.a
+        libopencv_imgproc.a
+        libopencv_video.a
+        libopencv_photo.a
+        libopencv_calib3d.a
     )
 endif()
 
 # find_package(OpenCV REQUIRED COMPONENTS world)
-find_package(OpenCV REQUIRED   core
-highgui
-imgproc
-video
-photo
-calib3d
+find_package(OpenCV REQUIRED core
+    highgui
+    imgproc
+    video
+    photo
+    calib3d
 )
 
-
 # if(NOT OpenCV_LIBS MATCHES "opencv_world")
-#     message(FATAL_ERROR "OpenCV world static library not found!")
+# message(FATAL_ERROR "OpenCV world static library not found!")
 # endif()
 # message(STATUS "Using OpenCV world lib: ${OpenCV_LIBS}")
 
-#=========================== pybind11配置 ===========================
+# =========================== pybind11配置 ===========================
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11 REQUIRED)
 include_directories(${pybind11_INCLUDE_DIRS})
 
-#=========================== JPEG静态库配置 ===========================
+# =========================== JPEG静态库配置 ===========================
 # 方法1：使用find_package标准查找（推荐）
 find_library(JPEG_LIBRARY
-  NAMES  libopenjp2.a   # 兼容不同系统命名
-  PATHS /opt/jpeg/lib
+    NAMES libopenjp2.a # 兼容不同系统命名
+    PATHS /opt/jpeg/lib
 )
+
 # find_path(JPEG_INCLUDE_DIR  PATHS /opt/jpeg/include/openjpeg-2.5)
 # if(JPEG_FOUND)
-#   message(STATUS "Found JPEG: ${JPEG_LIBRARY}")
-#   # 当使用静态库时需要显式链接依赖库
-#   if(JPEG_USE_STATIC_LIBS AND UNIX)
-#     list(APPEND JPEG_LIBRARY m)  # 添加数学库依赖
-#   endif()
+# message(STATUS "Found JPEG: ${JPEG_LIBRARY}")
+# # 当使用静态库时需要显式链接依赖库
+# if(JPEG_USE_STATIC_LIBS AND UNIX)
+# list(APPEND JPEG_LIBRARY m)  # 添加数学库依赖
+# endif()
 # else()
-#   message(FATAL_ERROR "JPEG library not found")
+# message(FATAL_ERROR "JPEG library not found")
 # endif()
 
-#=========================== 主库编译 ===========================
+# =========================== 主库编译 ===========================
+configure_file(
+    version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
+    @ONLY
+)
 add_library(xtsdk STATIC
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
     xtsdk.h
     xtsdk.cpp
     xtdaemon.cpp
@@ -111,12 +124,8 @@ add_library(xtsdk STATIC
     utils.cpp
     xtlogger.cpp
     xtsdkLibHandler.cpp
-    post_process.cpp
+    xtpcl_filter.cpp
 )
-
-
-
-
 
 if(WIN32)
     target_include_directories(xtsdk PUBLIC ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -143,7 +152,7 @@ else()
         message("*************XTSDK_LIB found  ${LIB_DIR}*************")
         target_link_libraries(xtsdk ${XTSDK_LIB})
     else()
-        message( "*************XTSDK_LIB not found: ${LIB_DIR}*************")
+        message("*************XTSDK_LIB not found: ${LIB_DIR}*************")
     endif()
 
     add_definitions(-DLIB_DIR="${LIB_DIR}")
@@ -152,6 +161,7 @@ else()
         ${Boost_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${pybind11_INCLUDE_DIRS}
+
         # ${JPEG_INCLUDE_DIR}
     )
     target_link_libraries(xtsdk PRIVATE
@@ -170,21 +180,19 @@ else()
         libz.a
         dl
     )
-
 endif()
 
-
-#=========================== Python模块生成 ===========================
+# =========================== Python模块生成 ===========================
 pybind11_add_module(xintan_sdk pyBinding.cpp)
-# target_link_libraries(xintan_sdk PRIVATE
-#     xtsdk
-#     pybind11::module
-# )
 
+# target_link_libraries(xintan_sdk PRIVATE
+# xtsdk
+# pybind11::module
+# )
 target_link_libraries(xintan_sdk PRIVATE xtsdk ${Python_LIBRARIES})
 target_include_directories(xintan_sdk PUBLIC ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS})
 
-#=========================== 后期验证 ===========================
+# =========================== 后期验证 ===========================
 message(STATUS "Final link libraries:")
 message(STATUS "  - Boost: ${Boost_LIBRARIES}")
 message(STATUS "OpenCV库路径: ${OpenCV_LIBS}")

@@ -244,10 +244,13 @@ namespace XinTan
         bool setSdkKalmanFilter(uint16_t factor, uint16_t threshold, uint16_t timedf = 300); // 设置sdk中的卡尔曼滤波
         bool setSdkEdgeFilter(uint16_t threshold);                                           // 设置sdk中的飞点滤波
         bool setSdkMedianFilter(uint16_t size);                                              // 设置sdk中的中值滤波
+        bool setSdkAvgFilter(uint16_t size, uint16_t timedf = 300);
+        void resetFilters();
 
         // 灰尘滤波. threshold:帧间比较时用的距离差阈值(最大1000mm)， framecount：使用几帧做这个滤波(范围2~9)  timedf：两帧见容许的时间差
         bool setSdkDustFilter(uint16_t threshold, uint16_t framecount = 4, uint16_t timedf = 300, uint16_t validpercent = 100);
         bool setSdkReflectiveFilter(const float &threshold_min, const float &threshold_max);
+        bool setSpatialFilter(const float &alpha, const uint32_t &delta, const uint8_t &iterations);
 
         bool clearAllSdkFilter(); // 清除SDK中所有的滤波设置
 

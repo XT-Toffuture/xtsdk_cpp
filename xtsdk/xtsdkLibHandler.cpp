@@ -119,11 +119,11 @@ namespace XinTan
         filter->doDustFilter(frame);
     }
 
-    bool LibHandler::setAvgFilterLib(uint16_t size)
+    bool LibHandler::setAvgFilterLib(uint16_t size, uint16_t timedf)
     {
         if (!bLibLoadSuccess)
             return false;
-        return filter->setAvgFilter(size);
+        return filter->setAvgFilter(size, timedf);
     }
 
     bool LibHandler::setKalmanFilterLib(uint16_t factor, uint16_t threshold, uint16_t timedf)
@@ -150,6 +150,13 @@ namespace XinTan
         if (!bLibLoadSuccess)
             return false;
         return filter->setSdkReflectiveFilter(threshold_min, threshold_max);
+    }
+
+    bool LibHandler::setSpatialFilterLib(const float &alpha, const uint32_t &delta, const uint8_t &iterations)
+    {
+        if (!bLibLoadSuccess)
+            return false;
+        return filter->setSpatialFilter(alpha, delta, iterations);
     }
 
     void LibHandler::doMedianFilterLib(const std::shared_ptr<IFrame> &frame)
@@ -208,12 +215,29 @@ namespace XinTan
 
         filter->doReflectiveFilter(frame);
     }
+
+    void LibHandler::doSpatialFilterLib(const std::shared_ptr<IFrame> &frame)
+    {
+        if (!bLibLoadSuccess)
+            return;
+
+        filter->doSpatialFilter(frame);
+    }
+
     void LibHandler::setSpecParaLib(uint8_t sn[29])
     {
         if (!bLibLoadSuccess)
             return;
 
         filter->setSpecPara(sn);
+    }
+
+    void LibHandler::resetFiltersLib()
+    {
+        if (!bLibLoadSuccess)
+            return;
+
+        filter->resetFilters();
     }
 
     bool LibHandler::getLoadFlag()

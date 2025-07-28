@@ -34,11 +34,11 @@ namespace XinTan
         filter_lib->setSpecParaLib(sn);
     }
 
-    bool BaseFilter::setAvgFilter(uint16_t size)
+    bool BaseFilter::setAvgFilter(uint16_t size, uint16_t timedf)
     {
         const std::lock_guard<std::mutex> lock(filterLock);
         filter_flag &= ~FILTER_AVERAGE;
-        if(!filter_lib->setAvgFilterLib(size)){
+        if(!filter_lib->setAvgFilterLib(size, timedf)){
             return true;
         }
         filter_flag |= FILTER_AVERAGE;
@@ -118,6 +118,20 @@ namespace XinTan
         return true;
     }
 
+    bool BaseFilter::setSpatialFilter(const float &alpha, const uint32_t &delta, const uint8_t &iterations)
+    {
+        const std::lock_guard<std::mutex> lock(filterLock);
+        filter_flag &= ~FILTER_SPATIAL;
+
+        if (!filter_lib->setSpatialFilterLib(alpha, delta, iterations))
+        {
+            return true;
+        }
+
+        filter_flag |= FILTER_SPATIAL;
+        return true;
+    }
+
     bool BaseFilter::clearAllFilter()
     {
         const std::lock_guard<std::mutex> lock(filterLock);
@@ -143,6 +157,7 @@ namespace XinTan
 
     void BaseFilter::doAverageFilter(const std::shared_ptr<Frame> &frame)
     {
+        filter_lib->doAverageFilterLib(frame);
     }
 
     void BaseFilter::doEdgeFilter(const std::shared_ptr<Frame> &frame)
@@ -155,11 +170,20 @@ namespace XinTan
         filter_lib->doReflectiveFilterLib(frame);
     }
 
+
+
+    void BaseFilter::resetFilters()
+    {
+        filter_lib->resetFiltersLib();
+    }
+
     std::string toBinaryString(int n, int bitWidth = 32)
     {
         std::bitset<32> binary(n);                                 // 使用 bitset 表示二进制
         return binary.to_string().substr(32 - bitWidth, bitWidth); // 截取指定宽度的二进制字符串
     }
+
+
     void BaseFilter::doBaseFilter(const std::shared_ptr<Frame> &frame)
     {
         const std::lock_guard<std::mutex> lock(filterLock);
@@ -196,8 +220,6 @@ namespace XinTan
 
         //std::cout << "doMedianFilter: " << tic.toc() << std::endl;
 
-        if (filter_flag & FILTER_AVERAGE)
-            doAverageFilter(frame);
 
         // if(frame->dust_percent > 50){
         //     if(filter_flag & FILTER_KALMAN)
@@ -206,6 +228,22 @@ namespace XinTan
         if (filter_flag & FILTER_KALMAN)
             doKalmanFilter_dist(frame);
 
+        if (filter_flag & FILTER_AVERAGE)
+            doAverageFilter(frame);
+
+        if (filter_flag & FILTER_SPATIAL)
+            doSpatialFilter(frame);
+
+
+
+        if (filter_flag & FILTER_EDGE)
+            doEdgeFilter(frame);
+
+    }
+
+    void BaseFilter::doSpatialFilter(const std::shared_ptr<Frame> &frame)
+    {
+        filter_lib->doSpatialFilterLib(frame);
     }
 
     void BaseFilter::doPostProcess(const std::shared_ptr<Frame> &frame)

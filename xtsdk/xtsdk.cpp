@@ -336,6 +336,24 @@ namespace XinTan
         return xtdaemon->baseFilter->setDustFilter(threshold, framecount, validpercent, timedf);
     }
 
+    bool XtSdk::setSpatialFilter(const float &alpha, const uint32_t &delta, const uint8_t &iterations)
+    {
+        XTDAEMONUSING;
+        return xtdaemon->baseFilter->setSpatialFilter(alpha, delta, iterations);
+    }
+
+    bool XtSdk::setSdkAvgFilter(uint16_t size, uint16_t timedf)
+    {
+        XTDAEMONUSING;
+        return xtdaemon->baseFilter->setAvgFilter(size, timedf);
+    }
+
+    void XtSdk::resetFilters()
+    {
+        XTDAEMONUSING;
+        return xtdaemon->baseFilter->resetFilters();
+    }
+
     bool XtSdk::clearAllSdkFilter()
     {
         XTDAEMONUSING;

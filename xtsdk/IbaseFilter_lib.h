@@ -18,7 +18,8 @@ enum BaseFilterType
     FILTER_MEDIAN = 0x0008,
     FILTER_DUST = 0x0010,
     FILTER_POST = 0x0020,
-    FILTER_REFLECT = 0x0040
+    FILTER_REFLECT = 0x0040,
+    FILTER_SPATIAL = 0x0080
 };
 
 struct SpecFiltersPara
@@ -130,7 +131,7 @@ public:
     virtual bool setDustFilter(uint16_t threshold,
                                uint16_t framecount,
                                uint16_t validpercent,
-                               uint16_t timedf) = 0;
+                               uint16_t timedf = 300) = 0;
 
     virtual bool setEdgeFilter(uint16_t threshold) = 0;
     virtual bool setKalmanFilter(uint16_t factor, uint16_t threshold, uint16_t timedf = 300) = 0;
@@ -138,7 +139,10 @@ public:
     virtual bool setPostParam(const float &dilation_pixels, const int &mode, const uint8_t &winsize, uint8_t motion_size) = 0;
     virtual bool setSdkReflectiveFilter(const float &threshold_min, const float &threshold_max) = 0;
     virtual void setSpecPara(uint8_t sn[29]) = 0;
-    virtual bool setAvgFilter(uint16_t size) = 0;
+    virtual bool setAvgFilter(uint16_t size, uint16_t timedf = 300) = 0;
+    virtual bool setSpatialFilter(const float &alpha, const uint32_t &delta, const uint8_t &iterations) = 0;
+
+    virtual void resetFilters() = 0;
 
     virtual void doDustFilter(const std::shared_ptr<IFrame> &frame) = 0;
     virtual void doMedianFilter(const std::shared_ptr<IFrame> &frame) = 0;
@@ -153,6 +157,7 @@ public:
 
     virtual void doCloudFilter(const std::shared_ptr<IFrame> &frame) = 0;
     virtual void doReflectiveFilter(const std::shared_ptr<IFrame> &frame) = 0;
+    virtual void doSpatialFilter(const std::shared_ptr<IFrame> &frame) = 0;
 
     virtual void printVersionLib() = 0;
 };

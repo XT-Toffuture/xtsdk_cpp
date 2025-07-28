@@ -36,6 +36,16 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def_readwrite("p1", &XinTan::CamParameterS::p1)
         .def_readwrite("p2", &XinTan::CamParameterS::p2);
 
+    py::class_<XinTan::ExtrinsicIMULidar>(m, "ExtrinsicIMULidar")
+        .def(py::init<>())
+        .def_readwrite("qw", &XinTan::ExtrinsicIMULidar::qw)
+        .def_readwrite("qx", &XinTan::ExtrinsicIMULidar::qx)
+        .def_readwrite("qy", &XinTan::ExtrinsicIMULidar::qy)
+        .def_readwrite("qz", &XinTan::ExtrinsicIMULidar::qz)
+        .def_readwrite("tx", &XinTan::ExtrinsicIMULidar::tx)
+        .def_readwrite("ty", &XinTan::ExtrinsicIMULidar::ty)
+        .def_readwrite("tz", &XinTan::ExtrinsicIMULidar::tz);
+
     py::enum_<XinTan::Frame::DataType>(m, "DataType")
         .value("AMPLITUDE", XinTan::Frame::AMPLITUDE)
         .value("DISTANCE", XinTan::Frame::DISTANCE)
@@ -74,8 +84,11 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def_readwrite("rawdistData", &XinTan::Frame::rawdistData)
         .def_readwrite("distData", &XinTan::Frame::distData)
         .def_readwrite("amplData", &XinTan::Frame::amplData)
+        .def_readwrite("freqMap", &XinTan::Frame::freqMap)
+        .def_readwrite("intMap", &XinTan::Frame::intMap)
         .def_readwrite("grayscaledata", &XinTan::Frame::grayscaledata)
         .def_readwrite("reflectivity", &XinTan::Frame::reflectivity)
+        .def_readwrite("motion_vec", &XinTan::Frame::motion_vec)
         .def_readwrite("points", &XinTan::Frame::points)
         .def_readwrite("frame_label", &XinTan::Frame::frame_label)
         // .def_readwrite("logtagname", &XinTan::Frame::logtagname)
@@ -84,14 +97,34 @@ PYBIND11_MODULE(xintan_sdk, m)
         // 绑定常用的 getter 和 setter 方法
         .def("sortData", &XinTan::Frame::sortData)
         .def("resetData", &XinTan::Frame::resetData)
+        .def("setCofArray", &XinTan::Frame::setCofArray)
+
+        .def("getImageFlags", &XinTan::Frame::getImageFlags)
         .def("getDistDataSize", &XinTan::Frame::getDistDataSize)
         .def("getDistData", &XinTan::Frame::getDistData, py::arg("index"))
         .def("getAmplData", &XinTan::Frame::getAmplData, py::arg("index"))
+        .def("getMaxAmplData", &XinTan::Frame::getMaxAmplData)
         .def("getRawDistData", &XinTan::Frame::getRawDistData, py::arg("index"))
         .def("getGrayscaleData", &XinTan::Frame::getGrayscaleData, py::arg("index"))
         .def("getReflectivity", &XinTan::Frame::getReflectivity, py::arg("index"))
+
         .def("getleveldata", &XinTan::Frame::getleveldata, py::arg("index"))
-        // .def("getTimeAlg", &XinTan::Frame::getTimeAlg)
+        .def("getMotionFlag", &XinTan::Frame::getMotionFlag, py::arg("index"))
+        .def("getFreqMap", &XinTan::Frame::getFreqMap, py::arg("index"))
+        .def("getIntMap", &XinTan::Frame::getIntMap, py::arg("index"))
+
+
+        .def("getDistDataBuffer", &XinTan::Frame::getDistDataBuffer)
+        .def("getAmplDataBuffer", &XinTan::Frame::getAmplDataBuffer)
+        .def("getRawDistDataBuffer", &XinTan::Frame::getRawDistDataBuffer)
+        .def("getGrayscaleDataBuffer", &XinTan::Frame::getGrayscaleDataBuffer)
+        .def("getReflectivityBuffer", &XinTan::Frame::getReflectivityBuffer)
+        .def("getleveldataBuffer", &XinTan::Frame::getleveldataBuffer)
+        .def("getMotionFlagBuffer", &XinTan::Frame::getMotionFlagBuffer)
+        .def("getFreqMapBuffer", &XinTan::Frame::getFreqMapBuffer)
+        .def("getIntMapBuffer", &XinTan::Frame::getIntMapBuffer)
+
+
 
         // 纯虚函数声明
         .def("getFrameVersion", &XinTan::Frame::getFrameVersion)
@@ -123,6 +156,9 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def("setFrameId", &XinTan::Frame::setFrameId)
         .def("setTimeStampS", &XinTan::Frame::setTimeStampS)
         .def("setDistdataIndex", &XinTan::Frame::setDistdataIndex)
+        .def("setRefdataIndex", &XinTan::Frame::setRefdataIndex)
+        .def("setAmpdataIndex", &XinTan::Frame::setAmpdataIndex)
+        .def("setMotionIndex", &XinTan::Frame::setMotionIndex)
         .def("setDustPercent", &XinTan::Frame::setDustPercent);
 
     // Binding for CBEventData
@@ -177,6 +213,7 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def("setSdkMedianFilter", &XinTan::XtSdk::setSdkMedianFilter, py::arg("size"))
         .def("setSdkDustFilter", &XinTan::XtSdk::setSdkDustFilter, py::arg("threshold"), py::arg("framecount") = 4, py::arg("timedf") = 300, py::arg("validpercent") = 100)
         .def("setSdkReflectiveFilter", &XinTan::XtSdk::setSdkReflectiveFilter, py::arg("threshold_min"), py::arg("threshold_max"))
+        .def("setSdkAvgFilter", &XinTan::XtSdk::setSdkAvgFilter, py::arg("size"), py::arg("timedf") = 300)
         .def("clearAllSdkFilter", &XinTan::XtSdk::clearAllSdkFilter)
         .def("setTransMirror", &XinTan::XtSdk::setTransMirror, py::arg("hmirror"), py::arg("vmirror"))
         .def("setPointsCornerCut", &XinTan::XtSdk::setPointsCornerCut, py::arg("iscut"))
@@ -185,7 +222,7 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def("setCutCorner", &XinTan::XtSdk::setCutCorner, py::arg("cutvalue"))
         .def("setSdkCloudCoordType", &XinTan::XtSdk::setSdkCloudCoordType, py::arg("type"))
         .def("setReflectivityCoef", &XinTan::XtSdk::setReflectivityCoef, py::arg("coef"))
-        .def("setPostProcess", &XinTan::XtSdk::setPostProcess, py::arg("dilation_pixels"), py::arg("mode"), py::arg("winsize"))
+        .def("setPostProcess", &XinTan::XtSdk::setPostProcess, py::arg("dilation_pixels"), py::arg("mode"), py::arg("winsize") = 9, py::arg("motion_size") = 5)
         .def("testDev", &XinTan::XtSdk::testDev)
         .def("resetDev", &XinTan::XtSdk::resetDev)
         .def("restoreDefault", &XinTan::XtSdk::restoreDefault)
@@ -194,15 +231,15 @@ PYBIND11_MODULE(xintan_sdk, m)
 
         .def("getDevInfo", [](XinTan::XtSdk &self) -> std::pair<bool, XinTan::RespDevInfo>
              {
-            XinTan::RespDevInfo devInfo;
-            bool result = self.getDevInfo(devInfo);
-            return std::make_pair(result, devInfo); })
+                 XinTan::RespDevInfo devInfo;
+                 bool result = self.getDevInfo(devInfo);
+                 return std::make_pair(result, devInfo); })
 
         .def("getDevConfig", [](XinTan::XtSdk &self) -> std::pair<bool, XinTan::RespDevConfig>
              {
-            XinTan::RespDevConfig devCfg;
-            bool result = self.getDevConfig(devCfg);
-            return std::make_pair(result, devCfg); })
+                 XinTan::RespDevConfig devCfg;
+                 bool result = self.getDevConfig(devCfg);
+                 return std::make_pair(result, devCfg); })
 
         .def("setIp", &XinTan::XtSdk::setIp, py::arg("ip"), py::arg("mask"), py::arg("gate"))
         .def("setUdpDestIp", &XinTan::XtSdk::setUdpDestIp, py::arg("ip"), py::arg("port") = 7687)
@@ -215,16 +252,20 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def("setMaxFps", &XinTan::XtSdk::setMaxFps, py::arg("maxfps"))
         .def("getLensCalidata", [](XinTan::XtSdk &self) -> std::pair<bool, XinTan::CamParameterS>
              {
-            XinTan::CamParameterS cam_para;
-            bool result = self.getLensCalidata(cam_para);
-            return std::make_pair(result, cam_para); })
+                 XinTan::CamParameterS cam_para;
+                 bool result = self.getLensCalidata(cam_para);
+                 return std::make_pair(result, cam_para); })
         .def("customCmd", &XinTan::XtSdk::customCmd, py::arg("cmdId"), py::arg("data"), py::arg("respData"), py::arg("timeoutms") = 1000)
         .def("getLogtagName", &XinTan::XtSdk::getLogtagName)
         .def("doUdpFrameData", &XinTan::XtSdk::doUdpFrameData, py::arg("udpframeData"), py::arg("frame_label") = "")
         .def("doXbinFrameData", &XinTan::XtSdk::doXbinFrameData, py::arg("xbin_path"))
+        .def("doXbinRecord", &XinTan::XtSdk::doXbinRecord, py::arg("xbin_path"), py::arg("frame"), py::arg("currIndex"))
+
         .def("updateFW", &XinTan::XtSdk::updateFW, py::arg("bin_path"))
         .def("setMultiModFreq", &XinTan::XtSdk::setMultiModFreq, py::arg("freqType1"), py::arg("freqType2"), py::arg("freqType3"), py::arg("freqType4"), py::arg("freqType5"))
-        .def("setAdditionalGray", &XinTan::XtSdk::setAdditionalGray, py::arg("on"));
+        .def("setAdditionalGray", &XinTan::XtSdk::setAdditionalGray, py::arg("on"))
+        .def("getImuExtParamters", &XinTan::XtSdk::getImuExtParamters, py::arg("imuparameters"), py::arg("flag") = 1)
+        .def("setBinningV", &XinTan::XtSdk::setBinningV, py::arg("flag"));
 
     // Binding enums
     py::enum_<XinTan::SdkState>(m, "SdkState")
@@ -246,8 +287,24 @@ PYBIND11_MODULE(xintan_sdk, m)
         .value("DevSTATE_WARN_TEMP", XinTan::DevStateCode::DevSTATE_WARN_TEMP)
         .value("DevSTATE_TEMP_DownFreq", XinTan::DevStateCode::DevSTATE_TEMP_DownFreq)
         .value("DevSTATE_ERR_TEMPH", XinTan::DevStateCode::DevSTATE_ERR_TEMPH)
+        .value("DevSTATE_ERR_NOSENSOR", XinTan::DevStateCode::DevSTATE_ERR_NOSENSOR)
+        .value("DevSTATE_ERR_NOMODIC", XinTan::DevStateCode::DevSTATE_ERR_NOMODIC)
+        .value("DevSTATE_ERR_NOTEMPIC", XinTan::DevStateCode::DevSTATE_ERR_NOTEMPIC)
+        .value("DevSTATE_ERR_BTNOAPP", XinTan::DevStateCode::DevSTATE_ERR_BTNOAPP)
         .value("DevSTATE_BOOTLOADER", XinTan::DevStateCode::DevSTATE_BOOTLOADER)
-        .value("DevSTATE_ERR_UNKNOW", XinTan::DevStateCode::DevSTATE_ERR_UNKNOW);
+        .value("DevSTATE_ERR_UNKNOW", XinTan::DevStateCode::DevSTATE_ERR_UNKNOW)
+        .value("DevSTATE_ERR_POWERV", XinTan::DevStateCode::DevSTATE_ERR_POWERV)
+        .value("DevSTATE_ERR_POWERA", XinTan::DevStateCode::DevSTATE_ERR_POWERA)
+        .value("DevSTATE_ERR_RAM", XinTan::DevStateCode::DevSTATE_ERR_RAM)
+        .value("DevSTATE_ERR_FLASH", XinTan::DevStateCode::DevSTATE_ERR_FLASH)
+        .value("DevSTATE_ERR_NOCALI", XinTan::DevStateCode::DevSTATE_ERR_NOCALI)
+        .value("DevSTATE_ERR_NOIPARMS", XinTan::DevStateCode::DevSTATE_ERR_NOIPARMS)
+        .value("DevSTATE_ERR_NOMAC", XinTan::DevStateCode::DevSTATE_ERR_NOMAC)
+        .value("DevSTATE_ERR_NOSN", XinTan::DevStateCode::DevSTATE_ERR_NOSN)
+        .value("DevSTATE_ERR_TEMPPARMS", XinTan::DevStateCode::DevSTATE_ERR_TEMPPARMS)
+        .value("DevSTATE_CALIBRATING", XinTan::DevStateCode::DevSTATE_CALIBRATING)
+        .value("DevSTATE_ERR_NOIMUPARAM", XinTan::DevStateCode::DevSTATE_ERR_NOIMUPARAM)
+        .value("DevSTATE_ERR_MAX", XinTan::DevStateCode::DevSTATE_ERR_MAX);
 
     py::enum_<XinTan::CmdRespCode>(m, "CmdRespCode")
         .value("CmdResp_OK", XinTan::CmdRespCode::CmdResp_OK)
@@ -334,7 +391,8 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def_readwrite("bootVersion", &XinTan::RespDevInfo::bootVersion)
         .def_readwrite("chipidStr", &XinTan::RespDevInfo::chipidStr)
         .def_readwrite("udpDestPort", &XinTan::RespDevInfo::udpDestPort)
-        .def_readwrite("timeSyncType", &XinTan::RespDevInfo::timeSyncType);
+        .def_readwrite("timeSyncType", &XinTan::RespDevInfo::timeSyncType)
+        .def_readwrite("bdrnulens", &XinTan::RespDevInfo::bdrnulens);
 
     // Binding for RespDevConfig
     py::class_<XinTan::RespDevConfig>(m, "RespDevConfig")
@@ -378,3 +436,4 @@ PYBIND11_MODULE(xintan_sdk, m)
         .def_readwrite("cut_intgrttime1", &XinTan::RespDevConfig::cut_intgrttime1)
         .def_readwrite("cut_distance1", &XinTan::RespDevConfig::cut_distance1);
 }
+

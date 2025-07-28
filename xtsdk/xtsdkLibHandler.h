@@ -43,7 +43,7 @@ class LibHandler {
     LibHandler(std::string &logtag);
     ~LibHandler();
     bool setDustFilterLib(uint16_t threshold, uint16_t framecount,
-                          uint16_t validpercent, uint16_t timedf);
+                          uint16_t validpercent, uint16_t timedf = 300);
     void doDustFilterLib(const std::shared_ptr<Frame> &frame);
 
 
@@ -56,7 +56,10 @@ class LibHandler {
     bool setMedianFilterLib(uint16_t size);
     bool setPostParamLib(const float &dilation_pixels, const int &mode, const uint8_t &winsize, uint8_t motion_size);
     bool setSdkReflectiveFilterLib(const float &threshold_min, const float &threshold_max);
-    bool setAvgFilterLib(uint16_t size);
+    bool setAvgFilterLib(uint16_t size, uint16_t timedf = 300);
+    bool setSpatialFilterLib(const float &alpha, const uint32_t &delta, const uint8_t &iterations);
+
+    void resetFiltersLib();
 
     void doMedianFilterLib(const std::shared_ptr<IFrame> &frame);
     void doKalmanFilterLib(const std::shared_ptr<IFrame> &frame);
@@ -66,6 +69,7 @@ class LibHandler {
     void doCloseProcessLib(const std::shared_ptr<IFrame> &frame);
     void doMotionTrackLib(const std::shared_ptr<IFrame> &frame);
     void doReflectiveFilterLib(const std::shared_ptr<IFrame> &frame);
+    void doSpatialFilterLib(const std::shared_ptr<IFrame> &frame);
     void setSpecParaLib(uint8_t sn[29]);
 
     };
