@@ -225,6 +225,7 @@ namespace XinTan
         bool setConnectSerialportName(std::string serialportName); // 如果用USB连接，使用这个API设置要连接设备的COM口地址(如 "COM2")
 
         bool isUsedNet(); // 设备连接是否通过网络
+        bool set_endianCheck(bool enable);
 
         /***********  SDK 运行相关 **********************/
         void startup();  // 启动sdk运行
@@ -274,8 +275,9 @@ namespace XinTan
         void setCutCorner(uint32_t cutvalue); // 设置四角切除的
 
         void setReflectivityCoef(float coef); // 设置计算发射率的系数
+        void setSdkCutMaxRefFilter(uint32_t cutmaxref);
 
-                void setPlayState(bool is_playing);
+        void setPlayState(bool is_playing);
 
         bool getPlayState();
 

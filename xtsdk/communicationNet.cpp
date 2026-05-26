@@ -22,8 +22,8 @@ namespace XinTan {
       tcpRecvPacket(XByteArray(4096)),
       socketUdp(ios),
       //udpEndpoint(udp::v4(), 7687),
-      udpRecvBuffer(XByteArray(4096)),
-      udpRecvPacket(XByteArray(4096))
+      udpRecvBuffer(XByteArray(100096)),
+      udpRecvPacket(XByteArray(100096))
   {
       address = "";
       isConnected = false;
@@ -36,13 +36,19 @@ namespace XinTan {
         data_count[i] = 0;
         data_sn[i] = 0;
         data_size[i] = 0;
+        discard_frameid[i] = 0;
       }
   }
 
   CommnunicationNet::~CommnunicationNet()
   {
       disconnect();
-      closeUdp();
+      //closeUdp();
+       if(socketUdp.is_open())
+       {
+          boost::system::error_code error;
+          socketUdp.close(error);
+       }
   }
 
   void openTcpThread(CommnunicationNet * pComuntNet)
@@ -102,7 +108,7 @@ namespace XinTan {
   void CommnunicationNet::disconnect()
   {
       const std::lock_guard<std::mutex> lock(opencloseLock);
-       if(isConnected == false)
+       if((isConnected == false) && (socketTcp.is_open()==false))
           return;
 
         boost::system::error_code error;
@@ -119,25 +125,36 @@ namespace XinTan {
   }
   bool CommnunicationNet::openUdp(uint16_t port)
   {
-    const std::lock_guard<std::mutex> lock(opencloseLock);
-    if(isUdpOpened)
+    const std::lock_guard<std::mutex> lock(opencloseLockudp);
+    
+    XTLOGINFOEXT(logtagname, "");
+    if((isUdpOpened)&&(socketUdp.is_open()))
         return true;
 
-	XTLOGWRN("");
     try{
         socketUdp.open(boost::asio::ip::udp::v4());
         socketUdp.set_option(boost::asio::ip::udp::socket::reuse_address(true));
         boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address_v4::any(), port);
 
-        socketUdp.bind(endpoint);		
+        socketUdp.bind(endpoint);
+
+        //        socketUdp.set_option(boost::asio::ip::multicast::join_group(
+        //                                 boost::asio::ip::address_v4::from_string("239.255.255.76")
+        //                                 , boost::asio::ip::address_v4::from_string("0.0.0.0"))
+        //                             );
+        //if(UdpMultiCastOn)
+            socketUdp.set_option(boost::asio::ip::multicast::join_group(boost::asio::ip::address_v4::from_string("239.255.255.76")) );
 
         isUdpOpened = true;
+
+        XTLOGINFOEXT(logtagname, "udp opened");
 		return true;
 
 	}catch( std::exception &e)
 	{
         std::cout << "openUdp:exception " << e.what() <<  std::endl;
-        XTLOGWRN("exception");
+        
+        XTLOGINFOEXT(logtagname, "udp open exception");
 	}
     return false;
 
@@ -145,13 +162,13 @@ namespace XinTan {
   
   void CommnunicationNet::closeUdp()
   {
-      const std::lock_guard<std::mutex> lock(opencloseLock);
+      const std::lock_guard<std::mutex> lock(opencloseLockudp);
 	  
-      if(isUdpOpened == false)
+      if((isUdpOpened == false)&&(socketUdp.is_open()==false))
          return;      
       isUdpOpened = false;
 	 
-	  XTLOGWRN("");
+	  XTLOGINFO("");
 
       boost::system::error_code error;
       try{
@@ -258,6 +275,7 @@ namespace XinTan {
                XTLOGWRN("udp error");
                return false;
            }
+           udppackage_len = len;
            if(udppacket(udpRecvBuffer, pkgData))
            {
                return true;
@@ -268,39 +286,49 @@ namespace XinTan {
 
   bool CommnunicationNet::udppacket(const XByteArray & p, XByteArray & pkgData)
   {
-         uint16_t imagesn = Utils::getValueUint16Endian(&p[0], endianType);
-         uint32_t totalsize = Utils::getValueUint32Endian(&p[2], endianType);
-         uint16_t payloadSize = Utils::getValueUint16Endian(&p[6], endianType);
-         uint32_t sentsize = Utils::getValueUint32Endian(&p[8], endianType);
-         //uint32_t packetNum = Utils::getValueUint32Endian(&p[16], Endian_Big);
+     uint32_t startpos = 0;
+     bool repkg_ok = false;
+     bool brepeat = false;
 
-         if(payloadSize > 1400)
+     do{
+
+         uint16_t imagesn = Utils::getValueUint16Endian(&p[startpos+ 0], endianType);
+         uint32_t totalsize = Utils::getValueUint32Endian(&p[startpos+2], endianType);
+         uint16_t payloadSize = Utils::getValueUint16Endian(&p[startpos+6], endianType);
+         uint32_t sentsize = Utils::getValueUint32Endian(&p[startpos+8], endianType);
+         //uint32_t packetNum = Utils::getValueUint32Endian(&p[16], Endian_Big);
+         bool istoframe = true;
+
+         if((payloadSize > 1400)|| ((payloadSize+startpos) >udppackage_len))
          {
              uint8_t endian = Endian_Little;
              if(endianType == Endian_Little)
                  endian = Endian_Big;
 
-             imagesn = Utils::getValueUint16Endian(&p[0], endian);
-             totalsize = Utils::getValueUint32Endian(&p[2], endian);
-             payloadSize = Utils::getValueUint16Endian(&p[6], endian);
-             sentsize = Utils::getValueUint32Endian(&p[8], endian);
+             imagesn = Utils::getValueUint16Endian(&p[startpos+0], endian);
+             totalsize = Utils::getValueUint32Endian(&p[startpos+2], endian);
+             payloadSize = Utils::getValueUint16Endian(&p[startpos+6], endian);
+             sentsize = Utils::getValueUint32Endian(&p[startpos+8], endian);
 
              if((payloadSize > 1400) || (sentsize > totalsize) || (totalsize > 1200000))
-                return false;
+                break;
 
              endianType = endian;
          }else if(payloadSize < 200)
          {
-             if(p[UDP_HEADER_OFFSET+8] == 252)
+             if(p[startpos+UDP_HEADER_OFFSET+8] == 252)
              {
-                 uint32_t startmark = Utils::getValueUint32Endian(&p[UDP_HEADER_OFFSET], Endian_Big);
-                 uint32_t endmark = Utils::getValueUint32Endian(&p[UDP_HEADER_OFFSET+payloadSize-4], Endian_Big);
+                 uint32_t startmark = Utils::getValueUint32Endian(&p[startpos+UDP_HEADER_OFFSET], Endian_Big);
+                 uint32_t endmark = Utils::getValueUint32Endian(&p[startpos+UDP_HEADER_OFFSET+payloadSize-4], Endian_Big);
 
                  if((startmark == 0x7EFFAA55) && (endmark == 0xFF7E55AA))
                  {
-                     pkgData.assign(p.begin()+UDP_HEADER_OFFSET+8, p.begin() +UDP_HEADER_OFFSET+ payloadSize-4);
+                     pkgData.assign(p.begin()+startpos+UDP_HEADER_OFFSET+8, p.begin() +startpos+UDP_HEADER_OFFSET+ payloadSize-4);
 
-                     return true;
+                     repkg_ok = true;
+                     istoframe = false;
+                     //break;
+                     //return true;
                  }else
                  {
                      std::cout << "imu frame start " << std::hex << startmark << std::endl;
@@ -309,6 +337,23 @@ namespace XinTan {
              }
          }
 
+        for(uint32_t i=0; i < 3; i++)
+        {
+            if( discard_frameid[i] > 0)
+            {
+                int32_t  curr_id = imagesn;
+                int32_t  discard_id = discard_frameid[i];
+
+                if(discard_id == curr_id)
+                    istoframe = false;
+
+                if(abs(curr_id - discard_id) > 30)
+                    discard_frameid[i] = 0;
+            }
+        }
+
+      if(istoframe)
+      {
          uint32_t bufIndex = 10;
          //找在用的index
          for(uint32_t i=0; i < 3; i++)
@@ -319,6 +364,7 @@ namespace XinTan {
          }
 
          if(bufIndex > 2)
+         {
              //找沒用的index
              for(uint32_t i=0; i < 3; i++)
              {
@@ -331,6 +377,7 @@ namespace XinTan {
                       data_isUsed[i] = 1;
                  }
              }
+         }
 
          if(bufIndex > 2)
          {
@@ -380,16 +427,30 @@ namespace XinTan {
                     }
                 }
             }
-            std::cout << "udp discard frame " << std::to_string(data_sn[bufIndex]) <<std::endl;
 
-            XTLOGWRN("udp discard frame "+std::to_string(data_sn[bufIndex]));
+            //记录丢弃id
+            {
+                uint16_t discard_index = 0;
+                for(uint32_t i=0; i < 3; i++)
+                {
+                    if(discard_frameid[i] == 0)
+                    {
+                        discard_index = i;
+                        break;
+                    }
+                }
+                discard_frameid[discard_index] = data_sn[bufIndex];
+                std::cout << "udp discard frame " << std::to_string(data_sn[bufIndex]) << " discardindex " << std::to_string(discard_index) <<std::endl;
+                //XTLOGWRN("udp discard frame "+std::to_string(data_sn[bufIndex]));
+            }
+
             data_isUsed[bufIndex] = 1;
             data_sn[bufIndex] = imagesn;
             data_size[bufIndex] = totalsize;
             data_count[bufIndex] = 0;
          }
 
-         memcpy(&data_buffer[bufIndex][sentsize], &p[UDP_HEADER_OFFSET], payloadSize);
+         memcpy(&data_buffer[bufIndex][sentsize], &p[startpos+UDP_HEADER_OFFSET], payloadSize);
          data_count[bufIndex] += payloadSize;
 
          if(data_count[bufIndex] >= data_size[bufIndex])
@@ -404,12 +465,27 @@ namespace XinTan {
                   if((startmark == 0x7EFFAA55) && (endmark == 0xFF7E55AA))
                   {
                       pkgData.assign(data_buffer[bufIndex].begin()+8, data_buffer[bufIndex].begin() + totalsize-4);
-                      return true;
-                  }
-
-                  std::cout << "udp frame error " << std::to_string(data_sn[bufIndex]) <<std::endl;
+                      repkg_ok = true;
+                      //break;
+                      //return true;
+                  }else
+                    std::cout << "udp frame error " << std::to_string(data_sn[bufIndex]) <<std::endl;
               }
          }
+       }
+         startpos += payloadSize+20;
+         if( startpos < udppackage_len)
+         {
+             brepeat = true;
+         }else
+             brepeat = false;
+
+     }while(brepeat);
+
+     udppackage_len = 0;
+     if(repkg_ok)
+         return true;
+     else
          return false;
   }
 

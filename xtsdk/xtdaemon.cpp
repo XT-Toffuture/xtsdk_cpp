@@ -157,11 +157,32 @@ namespace XinTan
         XTLOGINFO("daemon delete");
     }
 
+
+    void XtDaemon::set_multicast(bool enable)
+    {
+        communctNet->UdpMultiCastOn = enable;
+    }
+
     void XtDaemon::set_endianType(uint8_t endian)
     {
         endianType = endian;
         communctNet->endianType = endian;
         communctUsb->endianType = endian;
+    }
+
+    void XtDaemon::set_endianCheck(bool enable)
+    {
+        checkendian_enable = enable;
+        if (checkendian_enable)
+        {
+            bneedcheckendian = true;
+            set_endianType(Endian_Big); // Endian_Little
+        }
+        else
+        {
+            bneedcheckendian = false;
+            set_endianType(Endian_Little); // Endian_Little
+        }
     }
 
     uint8_t XtDaemon::get_endianType()
@@ -286,6 +307,8 @@ namespace XinTan
     void XtDaemon::startup()
     {
         XTLOGINFO("");
+        
+        bDaemonRuning = true;
         if (threadDaemon == nullptr)
         {
             threadDaemon = new std::thread(XtDaemon::DaemonFunc, this);
@@ -310,6 +333,10 @@ namespace XinTan
     {
         XTLOGINFO("");
         bDaemonStarted = false;
+        bDaemonRuning = false;
+        
+        commnunication->closeUdp();
+        commnunication->disconnect();
 
         {
             std::lock_guard<std::mutex> lock_img(imageQueueMutex);
@@ -536,6 +563,8 @@ namespace XinTan
 #if defined(__linux__)
         pthread_setname_np(pthread_self(), "XTDaemonTh");
 #endif
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        XTLOGINFOEXT(xtdaemon->logtagname, "");
         while (xtdaemon->bDaemonRuning)
         {
 
@@ -957,6 +986,9 @@ namespace XinTan
         pthread_setname_np(pthread_self(), "XTUdpRecTh");
 #endif
         XByteArray pkgData;
+
+        XTLOGINFOEXT(xtdaemon->logtagname, "isSelNet=" + std::to_string(xtdaemon->isSelNet));
+        
         while (xtdaemon->bDaemonRuning)
         {
             if (xtdaemon->isSelNet)
@@ -964,6 +996,7 @@ namespace XinTan
                 // #检查socket是否打开
                 if (xtdaemon->communctNet->isUdpOpened == false)
                 {
+                    XTLOGINFOEXT(xtdaemon->logtagname, "isUdpOpened=" + std::to_string(xtdaemon->communctNet->isUdpOpened)); 
                     if (xtdaemon->communctNet->openUdp(xtdaemon->udpPort))
                     {
                     }

@@ -173,6 +173,13 @@ namespace XinTan
         return xtdaemon->isSelNet;
     }
 
+    bool XtSdk::set_endianCheck(bool enable)
+    {
+        XTDAEMONUSING;
+        xtdaemon->set_endianCheck(enable);
+        return true;
+    }
+
     /***********  SDK 运行相关 **********************/
     void XtSdk::startup()
     {
@@ -367,10 +374,16 @@ namespace XinTan
     }
 
     extern float g_reflectcoef;
+    extern uint32_t g_reflectcutmax;
 
     void XtSdk::setReflectivityCoef(float coef)
     {
         g_reflectcoef = coef;
+    }
+
+    void XtSdk::setSdkCutMaxRefFilter(uint32_t cutmaxref)
+    {
+        g_reflectcutmax = cutmaxref;
     }
 
     /***********  命令相关 API **********************/
@@ -642,8 +655,9 @@ namespace XinTan
             devInfo.udpDestPort = rawdevinfo.udpDestPort;
             devInfo.timeSyncType = rawdevinfo.timesync_type;
 
-            if ((rawdevinfo.otherflags & 0x01) && ((rawdevinfo.otherflags & (0x01 << 4)) > 0))
-                devInfo.bdrnulens = 1;
+            //if ((rawdevinfo.otherflags & 0x01) && ((rawdevinfo.otherflags & (0x01 << 4)) > 0))
+            //    devInfo.bdrnulens = 1;
+            devInfo.bdrnulens = rawdevinfo.otherflags;
 
             return true;
         }
@@ -1106,6 +1120,9 @@ namespace XinTan
         case ModulationFreq::FREQ_1_5M:
             freq = 15;
             break;
+        case ModulationFreq::FREQ_0_75M:
+            freq = 31;
+            break;
 
         default:
             std::cout << "Unknown freq!" << std::endl;
@@ -1519,7 +1536,7 @@ namespace XinTan
             transform(devinfo.fwVersion.begin(), devinfo.fwVersion.end(), devinfo.fwVersion.begin(), ::tolower);
 
             XTLOGINFO("sn =" + devinfo.sn);
-            XTLOGINFO("fw =" + devinfo.fwVersion);
+            XTLOGINFO("fw =" + devinfo.fwVersion + "boot = " + devinfo.bootVersion);
 
             int fwlen = devinfo.fwVersion.length();
             int vpos = devinfo.fwVersion.find('v');

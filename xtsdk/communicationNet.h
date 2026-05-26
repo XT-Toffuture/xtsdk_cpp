@@ -42,6 +42,8 @@ private:
     XByteArray udpRecvBuffer;
     XByteArray udpRecvPacket;
 
+    uint32_t  udppackage_len;
+
 
     std::shared_ptr<Frame> currentFrame;
 
@@ -50,6 +52,9 @@ private:
     uint32_t data_count[3];
     uint16_t data_sn[3];
     uint32_t data_size[3];
+
+
+    uint16_t discard_frameid[3];
 
     bool udppacket(const XByteArray & p, XByteArray & pkgData);
 

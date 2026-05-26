@@ -24,9 +24,11 @@ public:
     bool isConnecting = false;
     uint8_t endianType = 1;//大端
     
-    std::string address;
+    std::string address;    
+    bool UdpMultiCastOn = false;
 
     std::mutex opencloseLock;
+    std::mutex opencloseLockudp;
   
     virtual bool connect() = 0;
     virtual void disconnect() = 0;

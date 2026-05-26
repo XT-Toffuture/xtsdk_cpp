@@ -255,6 +255,9 @@ void imgCallback(const std::shared_ptr<Frame> &imgframe)
     // imgframe->distData : 深度数据， uint16_t类型，尺寸 imgframe->height*imgframe->width
 }
 
+#include <Eigen/Dense>
+
+
 void updatePcl(const std::shared_ptr<Frame> &frame)
 {
     std::cout << "img: " + std::to_string(frame->frame_id) << std::endl;
@@ -269,6 +272,13 @@ void updatePcl(const std::shared_ptr<Frame> &frame)
     cloud->is_dense = false;
     cloud->points.resize(nPixel);
 
+
+    // 绕Y轴旋转公式 20度
+    float angle_rad = 20 * M_PI / 180.0f;
+    float cos_theta = cos(angle_rad);
+    float sin_theta = sin(angle_rad);
+
+
     {
         int i = 0;
         for (i = 0; i < (int)nPixel; i++)
@@ -277,6 +287,16 @@ void updatePcl(const std::shared_ptr<Frame> &frame)
             p.x = frame->points[i].x;
             p.y = frame->points[i].y;
             p.z = frame->points[i].z;
+
+
+            // 绕Y轴旋转公式 20度
+            float x_old = p.x;
+            float z_old = p.z;
+
+            p.x = x_old * cos_theta + z_old * sin_theta;
+            p.z = -x_old * sin_theta + z_old * cos_theta;
+
+
             p.intensity = frame->amplData[i] >= AMPLITUDE_ABNORMAL ? 0 : frame->amplData[i];
         }
     }
@@ -392,6 +412,12 @@ bool readIniFile(const std::string &filename,
         para_.lidar_filter_.ref_th_min = pt.get<float>("Filters.ref_th_min", 0.5);
         para_.lidar_filter_.ref_th_max = pt.get<float>("Filters.ref_th_max", 2.0);
         para_.lidar_filter_.postprocessThreshold = pt.get<float>("Filters.postprocessThreshold", 5.0);
+        para_.lidar_filter_.spatialEnable = pt.get<bool>("Filters.spatialEnable", true);
+        para_.lidar_filter_.spatialAlpha = pt.get<float>("Filters.spatialAlpha", 0.7);
+        para_.lidar_filter_.spatialDelta = pt.get<int>("Filters.spatialDelta", 70);
+        para_.lidar_filter_.spatialIterations = pt.get<int>("Filters.spatialIterations", 2);
+        para_.lidar_filter_.averageEnable = pt.get<bool>("Filters.averageEnable", false);
+        para_.lidar_filter_.averageSize = pt.get<int>("Filters.averageSize", 4);
 
         return true;
     }
@@ -444,6 +470,12 @@ bool readIniFile(const std::string &filename,
         para_.lidar_filter_.ref_th_min = 0.5;
         para_.lidar_filter_.ref_th_max = 2.0;
         para_.lidar_filter_.postprocessThreshold = 5.0;
+        para_.lidar_filter_.spatialEnable = true;
+        para_.lidar_filter_.spatialAlpha =  0.7;
+        para_.lidar_filter_.spatialDelta = 70;
+        para_.lidar_filter_.spatialIterations = 2;
+        para_.lidar_filter_.averageEnable = false;
+        para_.lidar_filter_.averageSize = 4;
 
         render_type = 0;
         coordType = 0;
@@ -562,6 +594,16 @@ int main(int argc, char *argv[])
                               static_cast<uint8_t>(para_set.lidar_filter_.dynamicsEnabled),
                               para_set.lidar_filter_.dynamicsWinsize,
                               para_set.lidar_filter_.dynamicsMotionsize);
+    }
+    if(para_set.lidar_filter_.spatialEnable)
+    {
+        xtsdk->setSpatialFilter(para_set.lidar_filter_.spatialAlpha,
+                                para_set.lidar_filter_.spatialDelta,
+                                para_set.lidar_filter_.spatialIterations);
+    }
+    if(para_set.lidar_filter_.averageEnable)
+    {
+        xtsdk->setSdkAvgFilter(para_set.lidar_filter_.averageSize, 2000);
     }
 
     xtsdk->startup();

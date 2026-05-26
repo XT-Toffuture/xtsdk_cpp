@@ -14,6 +14,7 @@ namespace XinTan
     uint16_t g_ybinning = 0;
 
     float g_reflectcoef = 0.0;
+    uint32_t g_reflectcutmax = 0.0;
 
     Frame::Frame(std::string &logtag_, uint16_t dataType_, uint64_t frame_id_,
                  uint16_t width_, uint16_t height_, uint16_t payloadOffset)
@@ -59,7 +60,8 @@ namespace XinTan
                           {3, 1},
                           {4, 6},
                           {7, 3},
-                          {15, 4}};
+                          {15, 4},
+                          {31, 5}};
 
         refcof_S240MINI = {0.051779f,  // FREQ_12M
                            0.038790f,  // FREQ_6M
@@ -339,6 +341,7 @@ namespace XinTan
         motion_vec.assign(width * height, 0);
     }
 
+    bool bis_m60 = false;
     void Frame::setCofArray()
     {
         std::string sn_str(reinterpret_cast<char *>(info.sn), 29);
@@ -352,6 +355,7 @@ namespace XinTan
                 sn_str_without_nulls.push_back(c);
             }
         }
+        bis_m60 = false;
 
         if ((int)sn_str_without_nulls.find("S240MINI") > 0)
             m_refcof = refcof_S240MINI;
@@ -370,7 +374,10 @@ namespace XinTan
         else if ((int)sn_str_without_nulls.find("M120ULTRA") > 0)
             m_refcof = refcof_M240ULTRA;
         else if ((int)sn_str_without_nulls.find("M60") > 0)
+        {
             m_refcof = refcof_M60;
+            bis_m60 = true;
+        }
         else if ((int)sn_str_without_nulls.find("Z240") > 0)
             m_refcof = refcof_M240;
         else if ((int)sn_str_without_nulls.find("M240") > 0)
@@ -386,6 +393,8 @@ namespace XinTan
         int offset, dist_offset, gs16_offset, level_offset, dcs_offset;
 
         int pixelcount = orgwidth * orgheight;
+
+        setCofArray();
 
         // V3 check
         if ((frame_version == 3) && (info.magicToken == 0x33CCAA50))
@@ -451,6 +460,8 @@ namespace XinTan
             {
                 offset = dist_offset + i * pixelbytes;
                 mirrori = (i / orgwidth) * orgwidth + orgwidth - 1 - i % orgwidth;
+                if(bis_m60)
+                    mirrori = i;
 
                 distData[mirrori] = data[offset + 1] << 8 | data[offset];
 
@@ -475,6 +486,8 @@ namespace XinTan
             {
                 offset = dist_offset + i * pixelbytes + 2;
                 mirrori = (i / orgwidth) * orgwidth + orgwidth - 1 - i % orgwidth;
+                if(bis_m60)
+                    mirrori = i;
 
                 amplData[mirrori] = data[offset + 1] << 8 | data[offset];
             }
@@ -489,6 +502,8 @@ namespace XinTan
             {
                 offset = gs16_offset + i * 2;
                 mirrori = (i / orgwidth) * orgwidth + orgwidth - 1 - i % orgwidth;
+                if(bis_m60)
+                    mirrori = i;
 
                 grayscaledata[mirrori] = data[offset + 1] << 8 | data[offset];
             }
@@ -505,8 +520,12 @@ namespace XinTan
                     offset = level_offset + i / 2;
 
                     mirrori = (i / orgwidth) * orgwidth + orgwidth - 1 - i % orgwidth;
+                    if(bis_m60)
+                        mirrori = i;
                     leveldata[mirrori] = data[offset] & 0x0F;
                     mirrori = ((i + 1) / orgwidth) * orgwidth + orgwidth - 1 - (i + 1) % orgwidth;
+                    if(bis_m60)
+                        mirrori = i+1;
                     leveldata[mirrori] = (data[offset] >> 4) & 0x0F;
                 }
             }
@@ -551,7 +570,6 @@ namespace XinTan
         //  if((g_reflectcoef > 0.0) && (info.imageflags & IMG_AMP))
         if (info.imageflags & IMG_AMP)
         {
-            setCofArray();
             uint32_t ampvalue = 0;
             float dist2value = 0;
             float reflctValue = 0;
@@ -617,6 +635,12 @@ namespace XinTan
                     reflectivity[i] = reflctValue;
                     freqMap[i] = levelfreq;
                     intMap[i] = levelintegtime;
+
+                    if((reflctValue > g_reflectcutmax) && ( g_reflectcutmax > 0))
+                    {
+                        distData[i] = DEPTH_FILTED;
+                        //amplData[i] = AMPLITUDE_FILTED;
+                    }
                 }
                 else
                 {

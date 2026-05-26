@@ -62,6 +62,9 @@ public:
     void EventCallback(const std::shared_ptr<CBEventData> & eventdata);
     void ImageCallback(const std::shared_ptr<Frame> & frame);
 
+    void set_multicast(bool enable);
+
+    void set_endianCheck(bool enable);
     void set_endianType (uint8_t endian);
     uint8_t get_endianType ();
     std::string & logtagname;

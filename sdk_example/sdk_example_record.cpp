@@ -301,6 +301,12 @@ bool readIniFile(const std::string &filename,
         para_.lidar_filter_.ref_th_min = pt.get<float>("Filters.ref_th_min", 0.5);
         para_.lidar_filter_.ref_th_max = pt.get<float>("Filters.ref_th_max", 2.0);
         para_.lidar_filter_.postprocessThreshold = pt.get<float>("Filters.postprocessThreshold", 5.0);
+        para_.lidar_filter_.spatialEnable = pt.get<bool>("Filters.spatialEnable", true);
+        para_.lidar_filter_.spatialAlpha = pt.get<float>("Filters.spatialAlpha", 0.7);
+        para_.lidar_filter_.spatialDelta = pt.get<int>("Filters.spatialDelta", 70);
+        para_.lidar_filter_.spatialIterations = pt.get<int>("Filters.spatialIterations", 2);
+        para_.lidar_filter_.averageEnable = pt.get<bool>("Filters.averageEnable", false);
+        para_.lidar_filter_.averageSize = pt.get<int>("Filters.averageSize", 4);
 
         return true;
     }
@@ -352,6 +358,12 @@ bool readIniFile(const std::string &filename,
         para_.lidar_filter_.ref_th_min = 0.5;
         para_.lidar_filter_.ref_th_max = 2.0;
         para_.lidar_filter_.postprocessThreshold = 5.0;
+        para_.lidar_filter_.spatialEnable = true;
+        para_.lidar_filter_.spatialAlpha =  0.7;
+        para_.lidar_filter_.spatialDelta = 70;
+        para_.lidar_filter_.spatialIterations = 2;
+        para_.lidar_filter_.averageEnable = false;
+        para_.lidar_filter_.averageSize = 4;
 
         return false;
     }

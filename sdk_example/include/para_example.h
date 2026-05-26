@@ -43,6 +43,12 @@ struct lidar_filter
     bool reflectiveEnable;
     float ref_th_min;
     float ref_th_max;
+    bool spatialEnable;
+    float spatialAlpha;
+    int spatialDelta;
+    int spatialIterations;
+    bool averageEnable;
+    int averageSize;
 };
 
 struct para_example

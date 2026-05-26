@@ -12,12 +12,14 @@ namespace XinTan
 #define DEPTH_ABNORMAL 964000
 #define DEPTH_LOW 964001
 #define DEPTH_IGNORE 964008
+#define DEPTH_FILTED 964010
 #define AMPLITUDE_ABNORMAL 64000
 #define AMPLITUDE_LOW 64001
 #define AMPLITUDE_ADC 64002
 #define AMPLITUDE_OVEREXPOSURE 64003
 #define AMPLITUDE_DEFECTIVE 64004
 #define AMPLITUDE_INVALID 64007
+#define AMPLITUDE_FILTED  64010
 
     typedef void (*LogFunction)(const char *pfunction, const char *plogstr);
 

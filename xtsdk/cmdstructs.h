@@ -33,7 +33,9 @@ struct FrameInfo_t{
     uint8_t  reduce;
     uint8_t  vcsel;
     uint8_t  fps;
-    uint8_t  reserver1[8];
+    uint8_t  aldcslevel;
+    uint8_t  is2dcsFlag;//每当一个bit
+    uint8_t  reserver1[6];
 
     //信息
     uint8_t  unit_div;//全局的距离单位: 默认50米量程是1mm,     100米量程为2mm，  200米量程为4mm
@@ -46,7 +48,8 @@ struct FrameInfo_t{
     int32_t  ptpoffsetus;
     uint8_t  imusize;
     uint8_t  otherflags;
-    uint8_t  reserver2[4];
+    uint8_t  chiptype;
+    uint8_t  reserver2[3];
     uint8_t  version;
 
     uint32_t crc32;
@@ -114,7 +117,9 @@ struct DevCfg_t{
     uint8_t     bdhcp;
     uint8_t     bcut_filteron;
     uint16_t    cutIntDist[3][2];
-    uint8_t     reserver[18];
+    uint8_t     aldcslevel;
+    uint8_t     is2dcsFlag;//每当一个bit
+    uint8_t     reserver[16];
 };
 #pragma pack(pop)  // 恢复原始的对齐方式
 
